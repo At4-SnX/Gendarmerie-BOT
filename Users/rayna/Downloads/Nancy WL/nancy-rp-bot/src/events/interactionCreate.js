@@ -544,11 +544,15 @@ async function handleRobloxVerify(interaction) {
   });
 
   // Change le pseudo Discord (si permissions)
-  try {
+try {
     const member = await interaction.guild.members.fetch(interaction.user.id);
-    const currentNick = member.displayName;
-    await member.setNickname(`${currentNick} | @${pending.robloxUsername}`);
-  } catch { /* Pas de permission ou propriétaire du serveur */ }
+    // Évite les doublons si déjà lié
+    const base = member.displayName.split(' | @')[0];
+    await member.setNickname(`${base} | @${pending.robloxUsername}`);
+    console.log(`[Roblox] Pseudo mis à jour : ${base} | @${pending.robloxUsername}`);
+} catch (err) {
+    console.error('[Roblox] Impossible de changer le pseudo (permissions) :', err.message);
+}
 
   const e = new EmbedBuilder().setColor(COLOR)
     .setTitle(`${EMOJIS.roblox} Compte Roblox lié avec succès !`)

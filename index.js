@@ -7,22 +7,22 @@ const client = new Client({
 
 // 1. Définition des commandes
 const commands = [
-    { name: 'ajouter', description: 'Ajouter une note à un élève', options: [
-        { name: 'nom', type: 3, description: 'Nom ou prénom de l\'élève', required: true },
+    { name: 'ajouter', description: 'Ajouter une note à un gendarme', options: [
+        { name: 'nom', type: 3, description: 'Nom ou prénom du gendarme', required: true },
         { name: 'info', type: 3, description: 'L\'info à ajouter', required: true }
     ]},
     { name: 'consulter', description: 'Consulter un dossier complet', options: [
         { name: 'nigend', type: 3, description: 'Le NIGEND à rechercher', required: true }
     ]},
     { name: 'promouvoir', description: 'Changer le grade d\'un élève', options: [
-        { name: 'nom', type: 3, description: 'Nom de l\'élève', required: true },
+        { name: 'nom', type: 3, description: 'Nom du gendarme', required: true },
         { name: 'grade', type: 3, description: 'Nouveau grade', required: true }
     ]},
     { name: 'certifier', description: 'Ajouter une compétence', options: [
-        { name: 'nom', type: 3, description: 'Nom de l\'élève', required: true },
+        { name: 'nom', type: 3, description: 'Nom du gendarme', required: true },
         { name: 'certif', type: 3, description: 'Compétence', required: true }
     ]},
-    { name: 'rechercher', description: 'Chercher un élève par nom', options: [
+    { name: 'rechercher', description: 'Chercher un gendarme par nom', options: [
         { name: 'nom', type: 3, description: 'Nom ou prénom à chercher', required: true }
     ]}
 ];
@@ -95,7 +95,7 @@ client.on('interactionCreate', async (interaction) => {
             const grade = interaction.options.getString('grade');
             const res = findByName(nom);
             if (res && updateGrade(res.nigend, grade)) await interaction.reply(`✅ Grade de ${res.nom} mis à jour : **${grade}**`);
-            else await interaction.reply("❌ Élève introuvable.");
+            else await interaction.reply("❌ Gendarme introuvable.");
         }
 
         // /certifier (par nom)
@@ -104,7 +104,7 @@ client.on('interactionCreate', async (interaction) => {
             const certif = interaction.options.getString('certif');
             const res = findByName(nom);
             if (res && addCertif(res.nigend, certif)) await interaction.reply(`✅ Compétence ajoutée à ${res.nom}.`);
-            else await interaction.reply("❌ Élève introuvable.");
+            else await interaction.reply("❌ Gendarme introuvable.");
         }
 
         // /rechercher (par nom)
@@ -112,7 +112,7 @@ client.on('interactionCreate', async (interaction) => {
             const nom = interaction.options.getString('nom');
             const res = findByName(nom);
             if (res) await interaction.reply(`🔍 **Trouvé :** ${res.nom} | Matricule : ${res.nigend} | Grade : ${res.grade}`);
-            else await interaction.reply("❌ Aucun élève trouvé.");
+            else await interaction.reply("❌ Aucun Gendarme trouvé.");
         }
     }
 });

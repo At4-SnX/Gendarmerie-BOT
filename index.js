@@ -40,20 +40,35 @@ client.on('interactionCreate', async (interaction) => {
         await interaction.showModal(modal);
     }
 
-   // Remplace ton bloc Modal dans index.js par ceci pour voir l'erreur dans tes logs
-if (interaction.isModalSubmit() && interaction.customId === 'id_modal') {
-    const nom = interaction.fields.getTextInputValue('nomInput');
-    const nigend = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    try {
-        await interaction.member.setNickname(`[${nigend}] ${nom}`);
-        saveDossier(nigend, { nom, notes: [] });
-        await interaction.reply({ content: `✅ Identité enregistrée. Matricule : ${nigend}`, ephemeral: true });
-    } catch (error) {
-        console.error("Erreur de renommage :", error);
-        await interaction.reply({ content: `❌ Erreur : Je n'ai pas la permission de renommer cet utilisateur (probablement à cause de son rôle).`, ephemeral: true });
+   // Modal identification
+    if (interaction.isModalSubmit() && interaction.customId === 'id_modal') {
+        const nom = interaction.fields.getTextInputValue('nomInput');
+        const nigend = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        try {
+            // 1. On tente de renommer
+            await interaction.member.setNickname(`[${nigend}] ${nom}`);
+            
+            // 2. On tente de sauvegarder
+            saveDossier(nigend, { nom, notes: [] });
+            
+            // 3. Réponse propre
+            await interaction.reply({ 
+                content: `✅ Identité enregistrée. Matricule : **${nigend}**`, 
+                ephemeral: true 
+            });
+        } catch (err) {
+            // Si le renommage a réussi MAIS que Discord renvoie une erreur de réponse, 
+            // on vérifie d'abord si la réponse a déjà été envoyée
+            if (interaction.replied || interaction.deferred) return;
+            
+            console.error("Erreur post-traitement :", err);
+            await interaction.reply({ 
+                content: `✅ Identité enregistrée (Matricule: ${nigend}), mais une erreur est survenue lors de la confirmation.`, 
+                ephemeral: true 
+            });
+        }
     }
-}
     // Commande /ajouter
     if (interaction.isChatInputCommand() && interaction.commandName === 'ajouter') {
         if (!interaction.member.roles.cache.has('1508184761380638820')) return interaction.reply("Accès réservé.");

@@ -1,25 +1,29 @@
 const fs = require('fs');
 const path = './data/dossiers.json';
 
-// Initialisation : s'assure que le fichier existe
-if (!fs.existsSync('./data')) fs.mkdirSync('./data');
-if (!fs.existsSync(path)) fs.writeFileSync(path, JSON.stringify({}));
+// S'assure que le dossier et le fichier existent au démarrage
+if (!fs.existsSync('./data')) {
+    fs.mkdirSync('./data');
+}
+if (!fs.existsSync(path)) {
+    fs.writeFileSync(path, JSON.stringify({}));
+}
 
 module.exports = {
-    // Vérifie si un membre a déjà un dossier avec son ID Discord
+    // Vérifie si un utilisateur possède déjà un matricule (pour bloquer les inscriptions multiples)
     isAlreadyRegistered: (discordId) => {
         const db = JSON.parse(fs.readFileSync(path, 'utf8'));
         return Object.values(db).some(dossier => dossier.discordId === discordId);
     },
 
-    // Sauvegarde un nouveau dossier (pour l'identification)
+    // Crée le dossier lors de la première identification
     saveDossier: (nigend, data) => {
         const db = JSON.parse(fs.readFileSync(path, 'utf8'));
         db[nigend] = data;
         fs.writeFileSync(path, JSON.stringify(db, null, 2));
     },
 
-    // Ajoute une info dans un dossier existant
+    // Ajoute une note à un matricule existant
     updateDossier: (nigend, info) => {
         const db = JSON.parse(fs.readFileSync(path, 'utf8'));
         if (db[nigend]) {
@@ -31,7 +35,7 @@ module.exports = {
         return false;
     },
 
-    // Récupère tous les dossiers (utile pour d'autres commandes)
+    // Récupère toute la base de données (utilisé par la commande /consulter)
     getDossiers: () => {
         return JSON.parse(fs.readFileSync(path, 'utf8'));
     }

@@ -40,46 +40,20 @@ client.on('interactionCreate', async (interaction) => {
         await interaction.showModal(modal);
     }
 
-        // Modal identification
-    if (interaction.isModalSubmit() && interaction.customId === 'id_modal') {
-
-        try {
-
-            const nom = interaction.fields.getTextInputValue('nomInput');
-
-            const nigend = Math.floor(
-                100000 + Math.random() * 900000
-            ).toString();
-
-            const pseudo = `[${nigend}] ${nom}`.slice(0, 32);
-
-            // await interaction.member.setNickname(pseudo);
-
-            saveDossier(nigend, {
-                nom: nom,
-                notes: []
-            });
-
-            await interaction.reply({
-                content:
-                    `✅ Identification terminée\n\n` +
-                    `👤 Nom : ${nom}\n` +
-                    `🪪 Matricule : ${nigend}`,
-                ephemeral: true
-            });
-
-        } catch (error) {
-
-            console.error("Erreur identification :", error);
-
-            await interaction.reply({
-                content:
-                    "❌ Impossible de terminer l'identification.",
-                ephemeral: true
-            });
-        }
+   // Remplace ton bloc Modal dans index.js par ceci pour voir l'erreur dans tes logs
+if (interaction.isModalSubmit() && interaction.customId === 'id_modal') {
+    const nom = interaction.fields.getTextInputValue('nomInput');
+    const nigend = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    try {
+        await interaction.member.setNickname(`[${nigend}] ${nom}`);
+        saveDossier(nigend, { nom, notes: [] });
+        await interaction.reply({ content: `✅ Identité enregistrée. Matricule : ${nigend}`, ephemeral: true });
+    } catch (error) {
+        console.error("Erreur de renommage :", error);
+        await interaction.reply({ content: `❌ Erreur : Je n'ai pas la permission de renommer cet utilisateur (probablement à cause de son rôle).`, ephemeral: true });
     }
-
+}
     // Commande /ajouter
     if (interaction.isChatInputCommand() && interaction.commandName === 'ajouter') {
         if (!interaction.member.roles.cache.has('1508184761380638820')) return interaction.reply("Accès réservé.");

@@ -12,43 +12,33 @@ module.exports = {
     
     saveDossier: (nigend, data) => {
         const db = readDb();
-        db[nigend] = { ...data, grade: 'Élève Gendarme', certifs: [] };
+        // On sauvegarde le dossier en utilisant le nom comme clé principale ou en gardant le NIGEND
+        db[nigend] = { ...data, grade: 'Élève Gendarme', certifs: [], notes: [] };
         saveDb(db);
     },
 
-    updateDossier: (nigend, info) => {
-        const db = readDb();
-        if (!db[nigend]) return false;
-        if (!db[nigend].notes) db[nigend].notes = [];
-        db[nigend].notes.push(info);
-        saveDb(db);
-        return true;
-    },
-
-    // Nouvelles fonctions
-    updateGrade: (nigend, grade) => {
-        const db = readDb();
-        if (!db[nigend]) return false;
-        db[nigend].grade = grade;
-        saveDb(db);
-        return true;
-    },
-
-    addCertif: (nigend, certif) => {
-        const db = readDb();
-        if (!db[nigend]) return false;
-        if (!db[nigend].certifs) db[nigend].certifs = [];
-        db[nigend].certifs.push(certif);
-        saveDb(db);
-        return true;
-    },
-
+    // Recherche un dossier par nom (retourne {nigend, ...data})
     findByName: (nom) => {
         const db = readDb();
-        return Object.entries(db).find(([nigend, data]) => 
-            data.nom.toLowerCase().includes(nom.toLowerCase())
-        );
+        const entry = Object.entries(db).find(([_, d]) => d.nom.toLowerCase().includes(nom.toLowerCase()));
+        return entry ? { nigend: entry[0], ...entry[1] } : null;
     },
 
-    getDossiers: () => readDb()
+    // Fonction générique pour mettre à jour par nom
+    updateByName: (nom, actionFn) => {
+        const db = readDb();
+        const entry = Object.entries(db).find(([_, d]) => d.nom.toLowerCase().includes(nom.toLowerCase()));
+        if (!entry) return false;
+        
+        const nigend = entry[0];
+        actionFn(db[nigend]);
+        saveDb(db);
+        return true;
+    },
+
+    // Récupère la liste complète pour les menus déroulants
+    getAllDossiers: () => {
+        const db = readDb();
+        return Object.entries(db).map(([nigend, data]) => ({ nigend, ...data }));
+    }
 };

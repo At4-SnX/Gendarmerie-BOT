@@ -40,14 +40,44 @@ client.on('interactionCreate', async (interaction) => {
         await interaction.showModal(modal);
     }
 
-    // Modal identification
+        // Modal identification
     if (interaction.isModalSubmit() && interaction.customId === 'id_modal') {
-        const nom = interaction.fields.getTextInputValue('nomInput');
-        const nigend = Math.floor(100000 + Math.random() * 900000).toString();
-        
-        await interaction.member.setNickname(`[${nigend}] ${nom}`);
-        saveDossier(nigend, { nom, notes: [] });
-        await interaction.reply({ content: `✅ Identité enregistrée. Matricule : ${nigend}`, ephemeral: true });
+
+        try {
+
+            const nom = interaction.fields.getTextInputValue('nomInput');
+
+            const nigend = Math.floor(
+                100000 + Math.random() * 900000
+            ).toString();
+
+            const pseudo = `[${nigend}] ${nom}`.slice(0, 32);
+
+            await interaction.member.setNickname(pseudo);
+
+            saveDossier(nigend, {
+                nom: nom,
+                notes: []
+            });
+
+            await interaction.reply({
+                content:
+                    `✅ Identification terminée\n\n` +
+                    `👤 Nom : ${nom}\n` +
+                    `🪪 Matricule : ${nigend}`,
+                ephemeral: true
+            });
+
+        } catch (error) {
+
+            console.error("Erreur identification :", error);
+
+            await interaction.reply({
+                content:
+                    "❌ Impossible de terminer l'identification.",
+                ephemeral: true
+            });
+        }
     }
 
     // Commande /ajouter

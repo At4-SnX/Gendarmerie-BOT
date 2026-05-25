@@ -1,20 +1,38 @@
 const fs = require('fs');
 const path = './data/dossiers.json';
 
-module.exports = {
-    updateDossier: (nigend, info) => {
-        // On lit le fichier
-        if (!fs.existsSync(path)) return false;
-        const db = JSON.parse(fs.readFileSync(path, 'utf8'));
+// Initialisation : s'assure que le fichier existe
+if (!fs.existsSync('./data')) fs.mkdirSync('./data');
+if (!fs.existsSync(path)) fs.writeFileSync(path, JSON.stringify({}));
 
-        // On vérifie si le NIGEND existe
+module.exports = {
+    // Vérifie si un membre a déjà un dossier avec son ID Discord
+    isAlreadyRegistered: (discordId) => {
+        const db = JSON.parse(fs.readFileSync(path, 'utf8'));
+        return Object.values(db).some(dossier => dossier.discordId === discordId);
+    },
+
+    // Sauvegarde un nouveau dossier (pour l'identification)
+    saveDossier: (nigend, data) => {
+        const db = JSON.parse(fs.readFileSync(path, 'utf8'));
+        db[nigend] = data;
+        fs.writeFileSync(path, JSON.stringify(db, null, 2));
+    },
+
+    // Ajoute une info dans un dossier existant
+    updateDossier: (nigend, info) => {
+        const db = JSON.parse(fs.readFileSync(path, 'utf8'));
         if (db[nigend]) {
-            // On ajoute l'info dans le tableau "notes"
+            if (!db[nigend].notes) db[nigend].notes = [];
             db[nigend].notes.push(info);
-            // On ré-écrit le fichier mis à jour
             fs.writeFileSync(path, JSON.stringify(db, null, 2));
             return true;
         }
         return false;
+    },
+
+    // Récupère tous les dossiers (utile pour d'autres commandes)
+    getDossiers: () => {
+        return JSON.parse(fs.readFileSync(path, 'utf8'));
     }
 };

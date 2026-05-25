@@ -87,7 +87,7 @@ client.on('messageCreate', async (message) => {
         const embed = new EmbedBuilder()
             .setTitle('🛡️ Gendarmerie Nationale')
             .setDescription('Cliquez sur le bouton pour vous identifier.')
-            .setColor(0x0000FF);
+            .setColor(0x3498DB);
 
         const row = new ActionRowBuilder()
             .addComponents(

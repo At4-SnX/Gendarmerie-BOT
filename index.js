@@ -53,7 +53,7 @@ client.on('interactionCreate', async (interaction) => {
 
             const pseudo = `[${nigend}] ${nom}`.slice(0, 32);
 
-            await interaction.member.setNickname(pseudo);
+            // await interaction.member.setNickname(pseudo);
 
             saveDossier(nigend, {
                 nom: nom,

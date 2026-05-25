@@ -14,7 +14,7 @@ const commands = [
     { name: 'consulter', description: 'Consulter un dossier complet', options: [
         { name: 'nigend', type: 3, description: 'Le NIGEND à rechercher', required: true }
     ]},
-    { name: 'promouvoir', description: 'Changer le grade d\'un élève', options: [
+    { name: 'promouvoir', description: 'Changer le grade d\'un gendarme', options: [
         { name: 'nom', type: 3, description: 'Nom du gendarme', required: true },
         { name: 'grade', type: 3, description: 'Nouveau grade', required: true }
     ]},
@@ -55,15 +55,31 @@ client.on('interactionCreate', async (interaction) => {
         await interaction.showModal(modal);
     }
     
-    if (interaction.isModalSubmit() && interaction.customId === 'id_modal') {
-        const nom = interaction.fields.getTextInputValue('nomInput');
-        const nigend = Math.floor(100000 + Math.random() * 900000).toString();
-        try {
-            await interaction.member.setNickname(`[${nigend}] ${nom}`);
-            saveDossier(nigend, { nom, discordId: interaction.user.id });
-            await interaction.reply({ content: `✅ Identité enregistrée. Matricule : **${nigend}**`, ephemeral: true });
-        } catch (e) { await interaction.reply("❌ Erreur de permissions."); }
+   // Modal identification
+if (interaction.isModalSubmit() && interaction.customId === 'id_modal') {
+    const nom = interaction.fields.getTextInputValue('nomInput');
+    const nigend = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    try {
+        // Renommage
+        await interaction.member.setNickname(`[${nigend}] ${nom}`);
+        
+        // Gestion des rôles
+        const roleIdentifie = '1508471664911056996';
+        const roleCivil = '1508169380276601006';
+        
+        await interaction.member.roles.add(roleIdentifie);
+        await interaction.member.roles.remove(roleCivil);
+        
+        // Sauvegarde
+        saveDossier(nigend, { nom, discordId: interaction.user.id });
+        
+        await interaction.reply({ content: `✅ Identité enregistrée. Matricule : **${nigend}** et rôles mis à jour !`, ephemeral: true });
+    } catch (err) {
+        console.error(err);
+        await interaction.reply({ content: "❌ Erreur : Vérifie que mon rôle est au-dessus des rôles 'Identifié' et 'Civil' dans les paramètres du serveur.", ephemeral: true });
     }
+}
 
     // Commandes Slash
     if (interaction.isChatInputCommand()) {
@@ -74,7 +90,7 @@ client.on('interactionCreate', async (interaction) => {
             const nom = interaction.options.getString('nom');
             const info = interaction.options.getString('info');
             if (updateByName(nom, (d) => d.notes.push(info))) await interaction.reply(`✅ Note ajoutée à **${nom}**.`);
-            else await interaction.reply("❌ Élève introuvable.");
+            else await interaction.reply("❌ Gendarme introuvable.");
         }
 
         // /consulter (par NIGEND)

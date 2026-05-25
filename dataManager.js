@@ -1,42 +1,54 @@
 const fs = require('fs');
 const path = './data/dossiers.json';
 
-// S'assure que le dossier et le fichier existent au démarrage
-if (!fs.existsSync('./data')) {
-    fs.mkdirSync('./data');
-}
-if (!fs.existsSync(path)) {
-    fs.writeFileSync(path, JSON.stringify({}));
-}
+if (!fs.existsSync('./data')) fs.mkdirSync('./data');
+if (!fs.existsSync(path)) fs.writeFileSync(path, JSON.stringify({}));
+
+const readDb = () => JSON.parse(fs.readFileSync(path, 'utf8'));
+const saveDb = (db) => fs.writeFileSync(path, JSON.stringify(db, null, 2));
 
 module.exports = {
-    // Vérifie si un utilisateur possède déjà un matricule (pour bloquer les inscriptions multiples)
-    isAlreadyRegistered: (discordId) => {
-        const db = JSON.parse(fs.readFileSync(path, 'utf8'));
-        return Object.values(db).some(dossier => dossier.discordId === discordId);
-    },
-
-    // Crée le dossier lors de la première identification
+    isAlreadyRegistered: (discordId) => Object.values(readDb()).some(d => d.discordId === discordId),
+    
     saveDossier: (nigend, data) => {
-        const db = JSON.parse(fs.readFileSync(path, 'utf8'));
-        db[nigend] = data;
-        fs.writeFileSync(path, JSON.stringify(db, null, 2));
+        const db = readDb();
+        db[nigend] = { ...data, grade: 'Élève Gendarme', certifs: [] };
+        saveDb(db);
     },
 
-    // Ajoute une note à un matricule existant
     updateDossier: (nigend, info) => {
-        const db = JSON.parse(fs.readFileSync(path, 'utf8'));
-        if (db[nigend]) {
-            if (!db[nigend].notes) db[nigend].notes = [];
-            db[nigend].notes.push(info);
-            fs.writeFileSync(path, JSON.stringify(db, null, 2));
-            return true;
-        }
-        return false;
+        const db = readDb();
+        if (!db[nigend]) return false;
+        if (!db[nigend].notes) db[nigend].notes = [];
+        db[nigend].notes.push(info);
+        saveDb(db);
+        return true;
     },
 
-    // Récupère toute la base de données (utilisé par la commande /consulter)
-    getDossiers: () => {
-        return JSON.parse(fs.readFileSync(path, 'utf8'));
-    }
+    // Nouvelles fonctions
+    updateGrade: (nigend, grade) => {
+        const db = readDb();
+        if (!db[nigend]) return false;
+        db[nigend].grade = grade;
+        saveDb(db);
+        return true;
+    },
+
+    addCertif: (nigend, certif) => {
+        const db = readDb();
+        if (!db[nigend]) return false;
+        if (!db[nigend].certifs) db[nigend].certifs = [];
+        db[nigend].certifs.push(certif);
+        saveDb(db);
+        return true;
+    },
+
+    findByName: (nom) => {
+        const db = readDb();
+        return Object.entries(db).find(([nigend, data]) => 
+            data.nom.toLowerCase().includes(nom.toLowerCase())
+        );
+    },
+
+    getDossiers: () => readDb()
 };

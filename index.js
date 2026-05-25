@@ -1,26 +1,38 @@
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, REST, Routes } = require('discord.js');
-const { updateDossier, saveDossier, isAlreadyRegistered, getDossiers } = require('./dataManager');
+const { updateDossier, saveDossier, isAlreadyRegistered, getDossiers, updateGrade, addCertif, findByName } = require('./dataManager');
 
 const client = new Client({ 
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers] 
 });
 
-// 1. Enregistrement des commandes
+// 1. Liste complète des commandes
 const commands = [
-    { name: 'ajouter', description: 'Ajouter une info', options: [
+    { name: 'ajouter', description: 'Ajouter une note au dossier', options: [
         { name: 'nigend', type: 3, description: 'Le NIGEND', required: true },
         { name: 'info', type: 3, description: 'L\'info à ajouter', required: true }
     ]},
     { name: 'consulter', description: 'Consulter un dossier', options: [
         { name: 'nigend', type: 3, description: 'Le NIGEND à rechercher', required: true }
+    ]},
+    { name: 'promouvoir', description: 'Changer le grade d\'un élève', options: [
+        { name: 'nigend', type: 3, description: 'NIGEND', required: true },
+        { name: 'grade', type: 3, description: 'Nouveau grade', required: true }
+    ]},
+    { name: 'certifier', description: 'Ajouter une compétence', options: [
+        { name: 'nigend', type: 3, description: 'NIGEND', required: true },
+        { name: 'certif', type: 3, description: 'Compétence', required: true }
+    ]},
+    { name: 'rechercher', description: 'Chercher un élève par son nom', options: [
+        { name: 'nom', type: 3, description: 'Nom ou prénom à chercher', required: true }
     ]}
 ];
 
+// 2. Enregistrement sur Discord
 client.once('ready', async () => {
     try {
         const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
         await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: commands });
-        console.log('✅ Bot en ligne et commandes (ajouter/consulter) enregistrées !');
+        console.log('✅ Bot en ligne : Toutes les commandes (ajouter, consulter, promouvoir, certifier, rechercher) sont enregistrées !');
     } catch (error) {
         console.error('❌ Erreur lors de l\'enregistrement des commandes :', error);
     }
@@ -43,31 +55,14 @@ client.on('messageCreate', async (message) => {
 
 // 3. Interactions
 client.on('interactionCreate', async (interaction) => {
-    // Bouton identification
-    if (interaction.isButton() && interaction.customId === 'start_id') {
-        if (isAlreadyRegistered(interaction.user.id)) return interaction.reply({ content: "❌ Déjà enregistré.", ephemeral: true });
-        const modal = new ModalBuilder().setCustomId('id_modal').setTitle('Identification');
-        const input = new TextInputBuilder().setCustomId('nomInput').setLabel('Nom Prénom RP').setStyle(TextInputStyle.Short);
-        modal.addComponents(new ActionRowBuilder().addComponents(input));
-        await interaction.showModal(modal);
-    }
-
-    // Modal identification
-    if (interaction.isModalSubmit() && interaction.customId === 'id_modal') {
-        const nom = interaction.fields.getTextInputValue('nomInput');
-        const nigend = Math.floor(100000 + Math.random() * 900000).toString();
-        try {
-            await interaction.member.setNickname(`[${nigend}] ${nom}`);
-            saveDossier(nigend, { nom, discordId: interaction.user.id, notes: [] });
-            await interaction.reply({ content: `✅ Identité enregistrée. Matricule : **${nigend}**`, ephemeral: true });
-        } catch (err) {
-            await interaction.reply({ content: "❌ Erreur de renommage (vérifie mes permissions).", ephemeral: true });
-        }
-    }
+    // ... (boutons et modals ici)
 
     // Commandes Slash
     if (interaction.isChatInputCommand()) {
-        if (!interaction.member.roles.cache.has('1508184761380638820')) return interaction.reply({ content: "Accès réservé.", ephemeral: true });
+        // Vérification des droits (rôle gradé)
+        if (!interaction.member.roles.cache.has('1508184761380638820')) {
+            return interaction.reply({ content: "Accès réservé aux gradés.", ephemeral: true });
+        }
 
         // Commande /ajouter
         if (interaction.commandName === 'ajouter') {
@@ -85,12 +80,38 @@ client.on('interactionCreate', async (interaction) => {
                 const dossier = db[nigend];
                 const embed = new EmbedBuilder()
                     .setTitle(`Dossier : ${dossier.nom}`)
-                    .setDescription(`**Notes :**\n${dossier.notes.length > 0 ? dossier.notes.join('\n') : "Aucune note."}`)
+                    .setDescription(`**Grade :** ${dossier.grade}\n**Certifications :** ${dossier.certifs?.join(', ') || 'Aucune'}\n**Notes :**\n${dossier.notes?.join('\n') || 'Aucune note.'}`)
                     .setColor(0x3498DB);
                 await interaction.reply({ embeds: [embed], ephemeral: true });
-            } else {
-                await interaction.reply("❌ Dossier introuvable.");
-            }
+            } else await interaction.reply("❌ Dossier introuvable.");
+        }
+
+        // --- ICI TU AJOUTES TES NOUVELLES COMMANDES ---
+
+        // Commande /promouvoir
+        if (interaction.commandName === 'promouvoir') {
+            const nigend = interaction.options.getString('nigend');
+            const grade = interaction.options.getString('grade');
+            if (updateGrade(nigend, grade)) await interaction.reply(`✅ Grade mis à jour pour ${nigend} : **${grade}**`);
+            else await interaction.reply("❌ Dossier introuvable.");
+        }
+
+        // Commande /certifier
+        if (interaction.commandName === 'certifier') {
+            const nigend = interaction.options.getString('nigend');
+            const certif = interaction.options.getString('certif');
+            if (addCertif(nigend, certif)) await interaction.reply(`✅ Compétence ajoutée : **${certif}**`);
+            else await interaction.reply("❌ Dossier introuvable.");
+        }
+
+        // Commande /rechercher
+        if (interaction.commandName === 'rechercher') {
+            const nom = interaction.options.getString('nom');
+            const result = findByName(nom);
+            if (result) {
+                const [nigend, data] = result;
+                await interaction.reply(`🔍 **Résultat trouvé :**\nNom: ${data.nom}\nNIGEND: ${nigend}\nGrade: ${data.grade}`);
+            } else await interaction.reply("❌ Aucun élève trouvé avec ce nom.");
         }
     }
 });
